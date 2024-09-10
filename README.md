@@ -41,7 +41,7 @@ helm upgrade --install \
   --create-namespace \
   --version v1.12.0 \
   --set installCRDs=true
-
+```
 ---
 #deploy opentelemetry-operator
 ```
@@ -52,10 +52,7 @@ kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releas
 #deploy OpenTelemetryCollector
 ```
 kubectl apply -f OpenTelemetryCollector.yaml
-
 ```
-
-
 ---
 #deploy Instrumentation
 ```
@@ -68,7 +65,6 @@ kubectl apply -n petstore -f Instrumentation.yaml
 ```
 kubectl create ns petstore
 kubectl apply -n petstore -f spring-petclinic.yaml
-
 ```
 ---
 #inject-java 
