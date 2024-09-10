@@ -1,3 +1,7 @@
+#diagram
+
+![alt text](./img/otel-pipline.png)
+
 #deploy opensearch
 ```
 helm repo add opensearch https://opensearch-project.github.io/helm-charts/
@@ -72,3 +76,6 @@ kubectl apply -n petstore -f spring-petclinic.yaml
 kubectl patch -n petstore deployment.apps/spring-petclinic \
  -p '{"spec": {"template": {"metadata": {"annotations": {"instrumentation.opentelemetry.io/inject-java": "true"}}}}}'
 ```
+
+
+ref. https://medium.com/@erikstrm_11611/demystify-opentelemetry-with-opensearch-as-a-single-plane-of-glass-919f884eb568
