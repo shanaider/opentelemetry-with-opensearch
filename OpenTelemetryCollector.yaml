@@ -4,6 +4,8 @@ metadata:
   name: demo
 spec:
   replicas: 1
+  mode: deployment
+  image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.108.0
   config: |
     receivers:
       otlp:
@@ -12,6 +14,139 @@ spec:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
+    processors:
+      tail_sampling:
+        decision_wait: 10s
+        num_traces: 100
+        expected_new_traces_per_sec: 10
+        policies: [
+        {
+        # Rule 1: use always_sample policy for services that don't belong to team_a and are not ready to use tail sampling
+        name: backwards-compatibility-policy,
+        type: and,
+        and:
+          {
+            and_sub_policy:
+              [
+                {
+                  name: services-using-tail_sampling-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    {
+                      key: service.name,
+                      values:
+                        [
+                          list,
+                          of,
+                          services,
+                          using,
+                          tail_sampling,
+                        ],
+                      invert_match: true,
+                    },
+                },
+                { name: sample-all-policy, type: always_sample },
+              ],
+          },
+      },
+        {
+          # Rule 3: low sampling for a noisy endpoint
+          name: team_a-noisy-endpoint-1,
+          type: and,
+          and:
+          {
+            and_sub_policy:
+              [
+                {
+                  name: service-name-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    { key: service.name, values: [spring-petclinic] },
+                },
+                {
+                  # filter by route
+                  name: route-name-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    {
+                      key: http.route,
+                      values: [/vets.+],
+                      enabled_regex_matching: true,
+                    },
+                },
+                {
+                  # apply probabilistic sampling
+                  name: probabilistic-policy,
+                  type: probabilistic,
+                  probabilistic: { sampling_percentage: 1 },
+                },
+              ],
+          },
+      },
+      {
+        # Rule 4: high sampling for other endpoints
+        name: team_a-service-1,
+        type: and,
+        and:
+          {
+            and_sub_policy:
+              [
+                {
+                  name: service-name-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    { key: service.name, values: [spring-petclinic] },
+                },
+                {
+                  # invert match - apply to all routes except the ones specified
+                  name: route-name-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    {
+                      key: http.route,
+                      values: [/vets.+],
+                      enabled_regex_matching: true,
+                      invert_match: true,
+                    },
+                },
+                {
+                  # apply probabilistic sampling
+                  name: probabilistic-policy,
+                  type: probabilistic,
+                  probabilistic: { sampling_percentage: 100 },
+                },
+              ],
+          },
+      },
+      {
+        # Rule 5: always sample if there is an error
+        name: team_a-status-policy,
+        type: and,
+        and:
+          {
+            and_sub_policy:
+              [
+                {
+                  name: service-name-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    {
+                      key: service.name,
+                      values:
+                        [
+                          spring-petclinic
+                        ],
+                    },
+                },
+                {
+                  name: trace-status-policy,
+                  type: status_code,
+                  status_code: { status_codes: [ERROR] },
+                },
+              ],
+          },
+      }
+      ]
     exporters:
       otlp/traces:
         endpoint: data-prepper:21890
