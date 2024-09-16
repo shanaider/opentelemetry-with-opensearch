@@ -77,5 +77,10 @@ kubectl patch -n petstore deployment.apps/spring-petclinic \
  -p '{"spec": {"template": {"metadata": {"annotations": {"instrumentation.opentelemetry.io/inject-java": "true"}}}}}'
 ```
 
+---
+```
+kubectl port-forward -n petstore deployment.apps/spring-petclinic 8081:8080
+```
+
 
 ref. https://medium.com/@erikstrm_11611/demystify-opentelemetry-with-opensearch-as-a-single-plane-of-glass-919f884eb568
